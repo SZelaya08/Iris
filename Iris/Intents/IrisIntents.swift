@@ -100,16 +100,17 @@ struct PendientesIntent: AppIntent {
 }
 
 // MARK: - Frases de Siri
-// Las frases en inglés están aquí; las de español están en AppShortcuts.xcstrings.
+// Las frases en español están aquí (idioma principal); las de inglés, en AppShortcuts.xcstrings.
+// Se evitan "dile a…", "habla con…" y "pregúntale a…" porque Siri las usa para mensajes y llamadas.
 
 struct IrisShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: HablarConIrisIntent(),
             phrases: [
-                "Tell \(.applicationName)",
-                "Talk to \(.applicationName)",
-                "Ask \(.applicationName)"
+                "Anota en \(.applicationName)",
+                "Asistente \(.applicationName)",
+                "Abre el asistente de \(.applicationName)"
             ],
             shortTitle: "Hablar con Iris",
             systemImageName: "bubble.left.and.text.bubble.right"
@@ -117,8 +118,9 @@ struct IrisShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: AgregarTareaIntent(),
             phrases: [
-                "Add a task in \(.applicationName)",
-                "New task in \(.applicationName)"
+                "Nueva tarea en \(.applicationName)",
+                "Agrega una tarea en \(.applicationName)",
+                "Agregar tarea en \(.applicationName)"
             ],
             shortTitle: "Nueva tarea",
             systemImageName: "checkmark.square"
@@ -126,8 +128,9 @@ struct IrisShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PendientesIntent(),
             phrases: [
-                "What's pending in \(.applicationName)",
-                "My tasks in \(.applicationName)"
+                "Pendientes de \(.applicationName)",
+                "Qué tengo pendiente en \(.applicationName)",
+                "Mis tareas en \(.applicationName)"
             ],
             shortTitle: "Pendientes",
             systemImageName: "list.bullet"

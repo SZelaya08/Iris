@@ -1,41 +1,96 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Tell ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dile a ${applicationName}" } }
+  "sourceLanguage": "es",
+  "strings": {
+    "Anota en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note in ${applicationName}"
+          }
+        }
       }
     },
-    "Talk to ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Habla con ${applicationName}" } }
+    "Asistente ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} assistant"
+          }
+        }
       }
     },
-    "Ask ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pregúntale a ${applicationName}" } }
+    "Abre el asistente de ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the ${applicationName} assistant"
+          }
+        }
       }
     },
-    "Add a task in ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agrega una tarea en ${applicationName}" } }
+    "Nueva tarea en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New task in ${applicationName}"
+          }
+        }
       }
     },
-    "New task in ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nueva tarea en ${applicationName}" } }
+    "Agrega una tarea en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a task in ${applicationName}"
+          }
+        }
       }
     },
-    "What's pending in ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Qué tengo pendiente en ${applicationName}" } }
+    "Agregar tarea en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add task in ${applicationName}"
+          }
+        }
       }
     },
-    "My tasks in ${applicationName}" : {
-      "localizations" : {
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mis tareas en ${applicationName}" } }
+    "Pendientes de ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's pending in ${applicationName}"
+          }
+        }
+      }
+    },
+    "Qué tengo pendiente en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do I have pending in ${applicationName}"
+          }
+        }
+      }
+    },
+    "Mis tareas en ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My tasks in ${applicationName}"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

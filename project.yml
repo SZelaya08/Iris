@@ -5,11 +5,12 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+  developmentLanguage: es
 
 settings:
   base:
-    MARKETING_VERSION: "0.3"
-    CURRENT_PROJECT_VERSION: "9"
+    MARKETING_VERSION: "0.3.1"
+    CURRENT_PROJECT_VERSION: "10"
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1"
     DEVELOPMENT_TEAM: ""
@@ -30,10 +31,10 @@ targets:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
-        CFBundleDevelopmentRegion: en
+        CFBundleDevelopmentRegion: es
         CFBundleLocalizations:
-          - en
           - es
+          - en
         NSRemindersFullAccessUsageDescription: Iris guarda tus tareas en una lista llamada Iris en Recordatorios para mostrarlas en tu pantalla de bloqueo.
         NSRemindersUsageDescription: Iris guarda tus tareas en una lista llamada Iris en Recordatorios para mostrarlas en tu pantalla de bloqueo.
         CFBundleURLTypes:
