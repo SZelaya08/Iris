@@ -1,4 +1,6 @@
 import Foundation
+import EventKit
+import WidgetKit
 
 struct TaskGroup: Identifiable {
     let name: String
@@ -6,40 +8,89 @@ struct TaskGroup: Identifiable {
     var id: String { name }
 }
 
-/// Guarda las tareas y avisa al widget cada vez que cambian.
+/// Las tareas de la app. Se guardan en la lista "Iris" de Recordatorios
+/// y avisan al widget cada vez que cambian.
 @MainActor
 final class TaskStore: ObservableObject {
+    enum Access { case unknown, granted, denied }
+
     @Published private(set) var tasks: [TaskItem] = []
+    @Published private(set) var access: Access = .unknown
+
+    private let repo = TaskRepository()
+    private var observer: NSObjectProtocol?
 
     init() {
-        SharedStore.migrateIfNeeded()
-        tasks = SharedStore.loadTasks()
+        access = TaskRepository.hasAccess ? .granted : (TaskRepository.wasDenied ? .denied : .unknown)
+
+        // Si cambias algo desde la app Recordatorios, Iris se actualiza sola.
+        observer = NotificationCenter.default.addObserver(
+            forName: .EKEventStoreChanged, object: repo.store, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.reload() }
+        }
+
+        Task { await reload() }
     }
 
     var pendingCount: Int { tasks.filter { !$0.isDone }.count }
 
+    // MARK: - Permiso
+
+    func requestAccess() async {
+        let granted = await repo.requestAccess()
+        access = granted ? .granted : .denied
+        if granted {
+            _ = repo.irisList(create: true)
+            migrateOldTasks()
+            await reload()
+        }
+    }
+
+    // MARK: - Acciones
+
+    func reload() async {
+        guard TaskRepository.hasAccess else {
+            tasks = []
+            return
+        }
+        access = .granted
+        tasks = await repo.fetchTasks()
+        WidgetCenter.shared.reloadAllTimelines()
+        await LiveActivityManager.sync(tasks: tasks)
+    }
+
     func add(title: String, dueDate: Date?) {
         let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
-        tasks.append(TaskItem(title: clean, dueDate: dueDate))
-        save()
+        repo.add(title: clean, dueDate: dueDate)
+        Task { await reload() }
     }
 
     func toggle(_ task: TaskItem) {
-        guard let i = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-        tasks[i].isDone.toggle()
-        save()
+        // Se marca al instante en pantalla y luego se guarda.
+        if let i = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[i].isDone.toggle()
+        }
+        repo.setDone(id: task.id, done: !task.isDone)
+        Task { await reload() }
     }
 
     func delete(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
-        save()
+        repo.delete(id: task.id)
+        Task { await reload() }
     }
 
     func clearDone() {
+        for task in tasks where task.isDone {
+            repo.delete(id: task.id)
+        }
         tasks.removeAll { $0.isDone }
-        save()
+        Task { await reload() }
     }
+
+    // MARK: - Grupos
 
     /// Agrupa las tareas como en el diseño: Hoy, Esta semana, Más adelante y Sin fecha.
     var groups: [TaskGroup] {
@@ -71,7 +122,26 @@ final class TaskStore: ObservableObject {
             .map { TaskGroup(name: $0.name, items: $0.items.sorted(by: TaskItem.sortOrder)) }
     }
 
-    private func save() {
-        SharedStore.saveTasks(tasks)
+    // MARK: - Tareas de la versión anterior
+
+    /// La versión 0.1 guardaba las tareas dentro de la app. Las pasamos
+    /// a la lista "Iris" una sola vez para que no se pierdan.
+    private func migrateOldTasks() {
+        struct OldTask: Codable {
+            var title: String
+            var dueDate: Date?
+            var isDone: Bool
+        }
+        let key = "iris.tasks"
+        let places = [UserDefaults(suiteName: "group.com.taliana.iris"), UserDefaults.standard]
+        for case let defaults? in places {
+            guard let data = defaults.data(forKey: key),
+                  let old = try? JSONDecoder().decode([OldTask].self, from: data)
+            else { continue }
+            for task in old where !task.isDone {
+                repo.add(title: task.title, dueDate: task.dueDate)
+            }
+            defaults.removeObject(forKey: key)
+        }
     }
 }

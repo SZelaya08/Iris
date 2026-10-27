@@ -8,8 +8,8 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "0.1.1"
-    CURRENT_PROJECT_VERSION: "2"
+    MARKETING_VERSION: "0.1.3"
+    CURRENT_PROJECT_VERSION: "4"
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1"
     DEVELOPMENT_TEAM: ""
@@ -29,15 +29,18 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
+        NSSupportsLiveActivities: true
+        NSRemindersFullAccessUsageDescription: Iris guarda tus tareas en una lista llamada Iris en Recordatorios para mostrarlas en tu pantalla de bloqueo.
+        NSRemindersUsageDescription: Iris guarda tus tareas en una lista llamada Iris en Recordatorios para mostrarlas en tu pantalla de bloqueo.
         CFBundleURLTypes:
           - CFBundleURLName: com.taliana.iris
             CFBundleURLSchemes:
               - iris
+    # Archivo de permisos vacío: GitHub lo usa al firmar, Sideloadly lo reemplaza al instalar.
     entitlements:
       path: Iris/Iris.entitlements
       properties:
-        com.apple.security.application-groups:
-          - group.com.taliana.iris
+        com.apple.security.application-groups: []
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.taliana.iris
@@ -57,11 +60,12 @@ targets:
         CFBundleDisplayName: Iris
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSRemindersFullAccessUsageDescription: El widget de Iris muestra las tareas de tu lista Iris en Recordatorios.
+        NSRemindersUsageDescription: El widget de Iris muestra las tareas de tu lista Iris en Recordatorios.
     entitlements:
       path: IrisWidget/IrisWidget.entitlements
       properties:
-        com.apple.security.application-groups:
-          - group.com.taliana.iris
+        com.apple.security.application-groups: []
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.taliana.iris.widget

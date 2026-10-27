@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AjustesView: View {
     // Sobre ti
@@ -10,8 +11,8 @@ struct AjustesView: View {
     @AppStorage("iris.resumenActivo") private var resumenActivo = true
     @AppStorage("iris.resumenHora") private var resumenHora: Double = 6.5 * 3600
 
-    // Widget (se guarda donde el widget lo pueda leer)
-    @State private var widget = SharedStore.loadWidgetSettings()
+    @EnvironmentObject private var tasks: TaskStore
+    @AppStorage(LiveActivityManager.settingKey) private var tarjetaGrande = true
 
     var body: some View {
         ZStack {
@@ -38,9 +39,6 @@ struct AjustesView: View {
         }
         .navigationTitle("Ajustes")
         .navigationBarTitleDisplayMode(.large)
-        .onChange(of: widget) { _, newValue in
-            SharedStore.saveWidgetSettings(newValue)
-        }
     }
 
     // MARK: - Secciones
@@ -116,25 +114,37 @@ struct AjustesView: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionLabel(text: "Widget de bloqueo")
             VStack(spacing: 0) {
-                Toggle("Mostrar en la pantalla de bloqueo", isOn: $widget.enabled.animation())
-                    .frame(minHeight: 56)
-                if widget.enabled {
-                    ThinDivider()
-                    Stepper(value: $widget.count, in: 1...3) {
-                        HStack {
-                            Text("Tareas a mostrar")
-                            Spacer()
-                            Text("\(widget.count)")
-                                .fontWeight(.semibold)
-                        }
+                HStack(spacing: 12) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 18))
+                        .foregroundStyle(IrisColor.navy)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tus tareas")
+                            .font(.system(size: 16))
+                        Text("Se guardan en Recordatorios › lista Iris")
+                            .font(.system(size: 13))
+                            .foregroundStyle(IrisColor.muted)
                     }
-                    .frame(minHeight: 56)
-                    ThinDivider()
-                    Toggle("Ocultar las terminadas", isOn: $widget.hideDone)
-                        .frame(minHeight: 56)
+                    Spacer()
+                    accessBadge
+                }
+                .frame(minHeight: 60)
+                ThinDivider()
+                Toggle(isOn: $tarjetaGrande) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tarjeta grande de tareas")
+                            .font(.system(size: 16))
+                        Text("Hasta 6 tareas en la pantalla de bloqueo y en la Dynamic Island")
+                            .font(.system(size: 13))
+                            .foregroundStyle(IrisColor.muted)
+                    }
+                }
+                .frame(minHeight: 64)
+                .onChange(of: tarjetaGrande) { _, _ in
+                    Task { await LiveActivityManager.sync(tasks: tasks.tasks) }
                 }
             }
-            .font(.system(size: 16))
             .foregroundStyle(IrisColor.ink)
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
@@ -143,24 +153,46 @@ struct AjustesView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)
-
-            // Diagnóstico: muestra si la app y el widget comparten el mismo espacio.
-            HStack(spacing: 6) {
-                Image(systemName: AppGroup.isAvailable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                Text(AppGroup.isAvailable ? "Conectado con el widget" : "Sin conexión con el widget")
-            }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(AppGroup.isAvailable ? IrisColor.navy : Color(hex: 0xB45309))
-            .padding(.leading, 4)
-            Text(AppGroup.id)
-                .font(.system(size: 11, design: .monospaced))
+            Text("La tarjeta grande se apaga sola después de unas 8 horas (así lo exige iOS). Se vuelve a encender cada vez que abres Iris.")
+                .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
-                .textSelection(.enabled)
+                .padding(.leading, 4)
+            Text("Para elegir cuántas tareas muestra, ocultar las terminadas o esconder la lista: mantén presionado el widget › Editar widget.")
+                .font(.system(size: 12))
+                .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)
         }
     }
 
     // MARK: - Piezas
+
+    @ViewBuilder
+    private var accessBadge: some View {
+        switch tasks.access {
+        case .granted:
+            Label("Conectado", systemImage: "checkmark.circle.fill")
+                .labelStyle(.titleAndIcon)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(IrisColor.navy)
+        case .unknown:
+            Button("Dar permiso") {
+                Task { await tasks.requestAccess() }
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(IrisColor.paper)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 36)
+            .background(Capsule().fill(IrisColor.navy))
+        case .denied:
+            Button("Abrir Configuración") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(IrisColor.navy)
+        }
+    }
 
     private func field<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {

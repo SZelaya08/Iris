@@ -16,6 +16,8 @@ struct RootView: View {
     @State private var tab: IrisTab = .iris
     @State private var showSettings = false
     @State private var isTyping = false
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var tasks: TaskStore
 
     var body: some View {
         NavigationStack {
@@ -45,6 +47,12 @@ struct RootView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showSettings) {
                 AjustesView()
+            }
+        }
+        // Cada vez que abres Iris, se ponen al día las tareas y la tarjeta grande.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await tasks.reload() }
             }
         }
         // Al tocar el widget se abre directamente la pestaña de Tareas.

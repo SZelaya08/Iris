@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Lista de tareas. Es la misma que se ve en el widget de la pantalla de bloqueo.
 struct TareasView: View {
@@ -20,7 +21,9 @@ struct TareasView: View {
                         }
                     }
 
-                    if store.tasks.isEmpty {
+                    if store.access != .granted {
+                        accessCard
+                    } else if store.tasks.isEmpty {
                         emptyState
                     } else {
                         ForEach(store.groups) { group in
@@ -68,11 +71,51 @@ struct TareasView: View {
             .accessibilityLabel("Nueva tarea")
             .padding(.trailing, 24)
             .padding(.bottom, 100)
+            .opacity(store.access == .granted ? 1 : 0)
+            .disabled(store.access != .granted)
         }
         .sheet(isPresented: $showNewTask) {
             NewTaskSheet()
                 .presentationDetents([.medium])
         }
+    }
+
+    /// Iris guarda las tareas en Recordatorios: hay que dar permiso una vez.
+    private var accessCard: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checklist")
+                .font(.system(size: 32, weight: .light))
+                .foregroundStyle(IrisColor.navy)
+            Text("Conecta tus tareas")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(IrisColor.ink)
+            Text(store.access == .denied
+                 ? "Iris no tiene permiso para usar Recordatorios. Actívalo en Configuración › Iris › Recordatorios › Acceso total."
+                 : "Iris guarda tus tareas en una lista llamada \"Iris\" en la app Recordatorios. Así también aparecen en tu pantalla de bloqueo.")
+                .font(.system(size: 14))
+                .foregroundStyle(IrisColor.muted)
+                .multilineTextAlignment(.center)
+            Button {
+                if store.access == .denied {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } else {
+                    Task { await store.requestAccess() }
+                }
+            } label: {
+                Text(store.access == .denied ? "Abrir Configuración" : "Dar permiso")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(IrisColor.paper)
+                    .padding(.horizontal, 20)
+                    .frame(minHeight: 44)
+                    .background(Capsule().fill(IrisColor.navy))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 20)
+        .glass()
     }
 
     private var emptyState: some View {
