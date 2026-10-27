@@ -1,0 +1,8 @@
+# Se genera en GitHub con XcodeGen, no se sube
+Iris.xcodeproj/
+build/
+Payload/
+*.ipa
+DerivedData/
+.DS_Store
+xcuserdata/
