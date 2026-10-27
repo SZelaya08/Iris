@@ -143,6 +143,20 @@ struct AjustesView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)
+
+            // Diagnóstico: muestra si la app y el widget comparten el mismo espacio.
+            HStack(spacing: 6) {
+                Image(systemName: AppGroup.isAvailable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                Text(AppGroup.isAvailable ? "Conectado con el widget" : "Sin conexión con el widget")
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(AppGroup.isAvailable ? IrisColor.navy : Color(hex: 0xB45309))
+            .padding(.leading, 4)
+            Text(AppGroup.id)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(IrisColor.muted)
+                .textSelection(.enabled)
+                .padding(.leading, 4)
         }
     }
 

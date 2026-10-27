@@ -8,6 +8,7 @@ struct TasksEntry: TimelineEntry {
     let tasks: [TaskItem]
     let pending: Int
     let settings: WidgetSettings
+    var connected: Bool = true
 }
 
 struct TasksProvider: TimelineProvider {
@@ -45,7 +46,8 @@ struct TasksProvider: TimelineProvider {
             date: Date(),
             tasks: Array(visible.prefix(max(1, settings.count))),
             pending: all.filter { !$0.isDone }.count,
-            settings: settings
+            settings: settings,
+            connected: AppGroup.isAvailable
         )
     }
 }
@@ -91,7 +93,10 @@ struct TasksWidgetView: View {
                 Text("\(entry.pending)")
                     .font(.system(size: 12, weight: .semibold))
             }
-            if entry.tasks.isEmpty {
+            if !entry.connected {
+                Text("Sin conexión con la app")
+                    .font(.system(size: 12))
+            } else if entry.tasks.isEmpty {
                 Text("Todo listo")
                     .font(.system(size: 12))
             } else {

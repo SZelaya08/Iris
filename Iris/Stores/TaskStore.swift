@@ -12,6 +12,7 @@ final class TaskStore: ObservableObject {
     @Published private(set) var tasks: [TaskItem] = []
 
     init() {
+        SharedStore.migrateIfNeeded()
         tasks = SharedStore.loadTasks()
     }
 
