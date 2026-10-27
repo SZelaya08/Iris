@@ -18,7 +18,7 @@ struct IrisAgent {
         let turns = history.suffix(14).map {
             GeminiClient.Turn(role: $0.fromIris ? .model : .user, text: $0.text)
         }
-        let json = try await GeminiClient.generate(system: systemPrompt(), turns: Array(turns), schema: Self.schema)
+        let json = try await GeminiClient.generate(system: systemPrompt(), turns: Array(turns))
         return try await perform(json)
     }
 
@@ -28,7 +28,7 @@ struct IrisAgent {
             role: .user,
             text: "Es la hora de mi resumen de la mañana. Salúdame y cuéntame en pocas líneas lo importante de hoy: tareas para hoy o atrasadas, recordatorios que llegan hoy o en los próximos días, y lo que conviene priorizar. No ejecutes acciones."
         )
-        let json = try await GeminiClient.generate(system: systemPrompt(), turns: [request], schema: Self.schema)
+        let json = try await GeminiClient.generate(system: systemPrompt(), turns: [request])
         let reply = try decode(json)
         return Reply(text: reply.respuesta, actions: [])
     }
@@ -77,6 +77,12 @@ struct IrisAgent {
         - crear_recordatorio: algo que debe recordarle en un momento concreto. Necesita "fecha" y "repetir" (none, daily, weekly, monthly o yearly).
         - borrar_recordatorio: usa "id" con la clave de la lista (por ejemplo R1).
 
+        Responde SIEMPRE solo con un objeto JSON, sin texto antes ni después, con esta forma:
+        {"respuesta": "lo que le dices a \(nombre)", "acciones": [{"tipo": "crear_tarea", "titulo": "…", "fecha": "2026-10-30T17:00"}]}
+        - "tipo" es uno de: crear_tarea, completar_tarea, borrar_tarea, crear_recordatorio, borrar_recordatorio.
+        - Campos opcionales de cada acción: "titulo", "fecha", "repetir", "id".
+        - Si no hay nada que hacer, "acciones" es una lista vacía [].
+
         Reglas:
         - Si te pide "recuérdame…" con un momento concreto, crea un recordatorio. Si solo dice que tiene que hacer algo, crea una tarea.
         - Las fechas van en formato yyyy-MM-ddTHH:mm, en su hora local. Calcula bien expresiones como "mañana", "el viernes" o "en 2 horas" a partir de la fecha actual.
@@ -110,7 +116,12 @@ struct IrisAgent {
         let acciones: [Action]?
     }
 
-    private func decode(_ json: String) throws -> Decoded {
+    private func decode(_ raw: String) throws -> Decoded {
+        // Por si Gemini envuelve el JSON en ```json … ``` o agrega texto alrededor.
+        var json = raw
+        if let start = raw.firstIndex(of: "{"), let end = raw.lastIndex(of: "}") {
+            json = String(raw[start...end])
+        }
         guard let data = json.data(using: .utf8),
               let decoded = try? JSONDecoder().decode(Decoded.self, from: data)
         else { throw GeminiClient.Failure.unreadable }
@@ -164,33 +175,6 @@ struct IrisAgent {
 
         return Reply(text: decoded.respuesta, actions: done)
     }
-
-    // MARK: - Formato de respuesta que le pedimos a Gemini
-
-    static let schema: [String: Any] = [
-        "type": "OBJECT",
-        "properties": [
-            "respuesta": ["type": "STRING"],
-            "acciones": [
-                "type": "ARRAY",
-                "items": [
-                    "type": "OBJECT",
-                    "properties": [
-                        "tipo": [
-                            "type": "STRING",
-                            "enum": ["crear_tarea", "completar_tarea", "borrar_tarea", "crear_recordatorio", "borrar_recordatorio"]
-                        ],
-                        "titulo": ["type": "STRING"],
-                        "fecha": ["type": "STRING", "description": "yyyy-MM-ddTHH:mm en hora local"],
-                        "repetir": ["type": "STRING", "enum": ["none", "daily", "weekly", "monthly", "yearly"]],
-                        "id": ["type": "STRING", "description": "Clave como T1 o R2"]
-                    ],
-                    "required": ["tipo"]
-                ]
-            ]
-        ],
-        "required": ["respuesta", "acciones"]
-    ]
 
     static let iso: DateFormatter = {
         let f = DateFormatter()

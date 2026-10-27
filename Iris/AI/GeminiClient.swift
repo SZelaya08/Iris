@@ -2,9 +2,16 @@ import Foundation
 
 /// Habla con la API de Gemini (plan gratuito).
 struct GeminiClient {
-    static let defaultModel = "gemini-3.5-flash-lite"
+    /// Modelos gratuitos, en orden de preferencia. Si uno no está disponible
+    /// para la cuenta, Iris prueba el siguiente y recuerda el que funcionó.
+    static let models = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-flash-latest"
+    ]
     static let keyAccount = "gemini.apiKey"
-    static let modelKey = "iris.geminiModel"
+    private static let workingModelKey = "iris.geminiModelActivo"
 
     struct Turn {
         enum Role: String { case user, model }
@@ -19,6 +26,7 @@ struct GeminiClient {
         case network
         case server(String)
         case unreadable
+        case modelUnavailable(String)
 
         var errorDescription: String? {
             switch self {
@@ -34,33 +42,49 @@ struct GeminiClient {
                 return "Gemini respondió con un error: \(message)"
             case .unreadable:
                 return "No entendí la respuesta de Gemini. ¿Me lo repites?"
+            case .modelUnavailable(let message):
+                return "El modelo de Gemini no está disponible: \(message)"
             }
         }
     }
 
     static var apiKey: String { Keychain.load(keyAccount) }
 
-    static var model: String {
-        let saved = UserDefaults.standard.string(forKey: modelKey)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return saved.isEmpty ? defaultModel : saved
+    /// El modelo que funcionó la última vez va primero.
+    private static var modelsToTry: [String] {
+        let saved = UserDefaults.standard.string(forKey: workingModelKey) ?? ""
+        return saved.isEmpty ? models : [saved] + models.filter { $0 != saved }
     }
 
     /// Envía la conversación y devuelve el texto JSON que responde Gemini.
-    static func generate(system: String, turns: [Turn], schema: [String: Any]) async throws -> String {
+    static func generate(system: String, turns: [Turn]) async throws -> String {
         let key = apiKey
         guard !key.isEmpty else { throw Failure.noKey }
 
+        var lastError: Error = Failure.unreadable
+        for model in modelsToTry {
+            do {
+                let text = try await call(model: model, key: key, system: system, turns: turns)
+                UserDefaults.standard.set(model, forKey: workingModelKey)
+                return text
+            } catch Failure.modelUnavailable(let message) {
+                lastError = Failure.server(message)
+                continue   // Probamos con el siguiente modelo.
+            }
+        }
+        throw lastError
+    }
+
+    private static func call(model: String, key: String, system: String, turns: [Turn]) async throws -> String {
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent") else {
-            throw Failure.server("modelo inválido")
+            throw Failure.modelUnavailable("modelo inválido")
         }
 
         let body: [String: Any] = [
             "systemInstruction": ["parts": [["text": system]]],
             "contents": mergedContents(turns),
             "generationConfig": [
-                "responseMimeType": "application/json",
-                "responseSchema": schema
+                "responseMimeType": "application/json"
             ]
         ]
 
@@ -83,12 +107,17 @@ struct GeminiClient {
 
         guard status == 200 else {
             let message = ((json?["error"] as? [String: Any])?["message"] as? String) ?? "código \(status)"
+            let lower = message.lowercased()
             switch status {
-            case 400 where message.localizedCaseInsensitiveContains("api key"),
+            case 400 where lower.contains("api key"),
                  401, 403:
                 throw Failure.badKey
             case 429:
                 throw Failure.quota
+            case 404:
+                throw Failure.modelUnavailable(message)
+            case 400 where lower.contains("model") && (lower.contains("not found") || lower.contains("not supported")):
+                throw Failure.modelUnavailable(message)
             default:
                 throw Failure.server(message)
             }

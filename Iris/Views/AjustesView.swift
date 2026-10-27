@@ -15,7 +15,6 @@ struct AjustesView: View {
 
     // Cerebro de Iris (la clave se guarda en el llavero del iPhone)
     @State private var apiKey = GeminiClient.apiKey
-    @AppStorage(GeminiClient.modelKey) private var modelo = ""
     @State private var probando = false
     @State private var resultadoPrueba: String?
     @AppStorage(LiveActivityManager.settingKey) private var tarjetaGrande = true
@@ -69,7 +68,7 @@ struct AjustesView: View {
                         }
                 }
 
-                HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     Button {
                         Task { await probar() }
                     } label: {
@@ -86,7 +85,9 @@ struct AjustesView: View {
                     if let resultadoPrueba {
                         Text(resultadoPrueba)
                             .font(.system(size: 13))
-                            .foregroundStyle(IrisColor.muted)
+                            .foregroundStyle(resultadoPrueba == "Conectado" ? IrisColor.navy : IrisColor.muted)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -97,20 +98,10 @@ struct AjustesView: View {
                     }
                     .foregroundStyle(IrisColor.navy)
                 }
-
-                field("Modelo") {
-                    TextField(GeminiClient.defaultModel, text: $modelo)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(.system(size: 14, design: .monospaced))
-                        .padding(.horizontal, 14)
-                        .frame(height: 44)
-                        .background(inputBackground)
-                }
             }
             .padding(16)
             .glass()
-            Text("En el plan gratis de Gemini, Google puede usar lo que le escribes a Iris para mejorar sus productos. Evita compartir contraseñas o datos sensibles. Deja el modelo vacío para usar el recomendado.")
+            Text("En el plan gratis de Gemini, Google puede usar lo que le escribes a Iris para mejorar sus productos. Evita compartir contraseñas o datos sensibles.")
                 .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)
@@ -122,20 +113,13 @@ struct AjustesView: View {
         defer { probando = false }
         do {
             _ = try await GeminiClient.generate(
-                system: "Responde en español.",
-                turns: [.init(role: .user, text: "Di hola en una palabra.")],
-                schema: IrisAgent.schema
+                system: "Responde solo con un objeto JSON.",
+                turns: [.init(role: .user, text: "Responde {\"respuesta\": \"hola\"}")]
             )
             resultadoPrueba = "Conectado"
         } catch {
-            resultadoPrueba = (error as? GeminiClient.Failure).map { failure in
-                switch failure {
-                case .badKey: return "Clave no válida"
-                case .quota: return "Sin cupo por hoy"
-                case .network: return "Sin internet"
-                default: return "Error, revisa el modelo"
-                }
-            } ?? "Error"
+            // Mostramos el motivo real para poder arreglarlo.
+            resultadoPrueba = error.localizedDescription
         }
     }
 
