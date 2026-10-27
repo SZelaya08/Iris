@@ -76,6 +76,12 @@ final class TaskStore: ObservableObject {
         Task { await reload() }
     }
 
+    /// La usa Iris (la IA) para marcar una tarea como hecha.
+    func setDone(_ task: TaskItem, done: Bool) {
+        guard task.isDone != done else { return }
+        toggle(task)
+    }
+
     func delete(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
         repo.delete(id: task.id)

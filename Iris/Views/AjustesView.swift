@@ -12,6 +12,12 @@ struct AjustesView: View {
     @AppStorage("iris.resumenHora") private var resumenHora: Double = 6.5 * 3600
 
     @EnvironmentObject private var tasks: TaskStore
+
+    // Cerebro de Iris (la clave se guarda en el llavero del iPhone)
+    @State private var apiKey = GeminiClient.apiKey
+    @AppStorage(GeminiClient.modelKey) private var modelo = ""
+    @State private var probando = false
+    @State private var resultadoPrueba: String?
     @AppStorage(LiveActivityManager.settingKey) private var tarjetaGrande = true
 
     var body: some View {
@@ -20,6 +26,7 @@ struct AjustesView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    cerebro
                     sobreTi
                     resumen
                     conexiones
@@ -39,9 +46,98 @@ struct AjustesView: View {
         }
         .navigationTitle("Ajustes")
         .navigationBarTitleDisplayMode(.large)
+        .onChange(of: resumenActivo) { _, _ in SummaryNotification.schedule() }
+        .onChange(of: resumenHora) { _, _ in SummaryNotification.schedule() }
     }
 
     // MARK: - Secciones
+
+    private var cerebro: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Cerebro de Iris")
+            VStack(alignment: .leading, spacing: 14) {
+                field("Clave de Gemini") {
+                    SecureField("Pega aquí tu clave", text: $apiKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(inputBackground)
+                        .onChange(of: apiKey) { _, newValue in
+                            Keychain.save(newValue.trimmingCharacters(in: .whitespacesAndNewlines), for: GeminiClient.keyAccount)
+                            resultadoPrueba = nil
+                        }
+                }
+
+                HStack(spacing: 12) {
+                    Button {
+                        Task { await probar() }
+                    } label: {
+                        Text(probando ? "Probando…" : "Probar conexión")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(IrisColor.paper)
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 40)
+                            .background(Capsule().fill(IrisColor.navy))
+                    }
+                    .disabled(probando || apiKey.isEmpty)
+                    .opacity(apiKey.isEmpty ? 0.5 : 1)
+
+                    if let resultadoPrueba {
+                        Text(resultadoPrueba)
+                            .font(.system(size: 13))
+                            .foregroundStyle(IrisColor.muted)
+                    }
+                }
+
+                if let url = URL(string: "https://aistudio.google.com/apikey") {
+                    Link(destination: url) {
+                        Label("Conseguir una clave gratis en Google AI Studio", systemImage: "arrow.up.right.square")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundStyle(IrisColor.navy)
+                }
+
+                field("Modelo") {
+                    TextField(GeminiClient.defaultModel, text: $modelo)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.system(size: 14, design: .monospaced))
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(inputBackground)
+                }
+            }
+            .padding(16)
+            .glass()
+            Text("En el plan gratis de Gemini, Google puede usar lo que le escribes a Iris para mejorar sus productos. Evita compartir contraseñas o datos sensibles. Deja el modelo vacío para usar el recomendado.")
+                .font(.system(size: 12))
+                .foregroundStyle(IrisColor.muted)
+                .padding(.leading, 4)
+        }
+    }
+
+    private func probar() async {
+        probando = true
+        defer { probando = false }
+        do {
+            _ = try await GeminiClient.generate(
+                system: "Responde en español.",
+                turns: [.init(role: .user, text: "Di hola en una palabra.")],
+                schema: IrisAgent.schema
+            )
+            resultadoPrueba = "Conectado"
+        } catch {
+            resultadoPrueba = (error as? GeminiClient.Failure).map { failure in
+                switch failure {
+                case .badKey: return "Clave no válida"
+                case .quota: return "Sin cupo por hoy"
+                case .network: return "Sin internet"
+                default: return "Error, revisa el modelo"
+                }
+            } ?? "Error"
+        }
+    }
 
     private var sobreTi: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -89,7 +185,7 @@ struct AjustesView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
             .glass()
-            Text("El resumen empezará a llegar cuando conectemos el cerebro de Iris.")
+            Text("A esa hora te llega un aviso. Al abrir Iris, ella te escribe el resumen con tus tareas y recordatorios del día.")
                 .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)

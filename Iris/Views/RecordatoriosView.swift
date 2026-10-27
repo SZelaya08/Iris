@@ -47,7 +47,7 @@ struct RecordatoriosView: View {
                 HStack(spacing: 12) {
                     FlowerMark(lineWidth: 1.6)
                         .frame(width: 22, height: 22)
-                    Text("Muy pronto podrás decirle a Iris \"Recuérdame…\" y aparecerá aquí.")
+                    Text("También puedes decirle a Iris \"Recuérdame…\" y aparecerá aquí.")
                         .font(.system(size: 14))
                         .foregroundStyle(IrisColor.muted)
                 }
