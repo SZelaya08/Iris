@@ -55,7 +55,7 @@ struct AjustesView: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionLabel(text: "Cerebro de Iris")
             VStack(alignment: .leading, spacing: 14) {
-                field("Clave de Gemini") {
+                field("Clave de IA (Groq o Gemini)") {
                     SecureField("Pega aquí tu clave", text: $apiKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -91,9 +91,9 @@ struct AjustesView: View {
                     }
                 }
 
-                if let url = URL(string: "https://aistudio.google.com/apikey") {
+                if let url = URL(string: "https://console.groq.com/keys") {
                     Link(destination: url) {
-                        Label("Conseguir una clave gratis en Google AI Studio", systemImage: "arrow.up.right.square")
+                        Label("Conseguir una clave gratis en Groq", systemImage: "arrow.up.right.square")
                             .font(.system(size: 14, weight: .medium))
                     }
                     .foregroundStyle(IrisColor.navy)
@@ -101,7 +101,7 @@ struct AjustesView: View {
             }
             .padding(16)
             .glass()
-            Text("En el plan gratis de Gemini, Google puede usar lo que le escribes a Iris para mejorar sus productos. Evita compartir contraseñas o datos sensibles.")
+            Text("Lo que le escribes a Iris se envía al proveedor de IA (Groq o Google) para que lo procese. Evita compartir contraseñas o datos sensibles. Iris detecta sola qué proveedor usar según la clave.")
                 .font(.system(size: 12))
                 .foregroundStyle(IrisColor.muted)
                 .padding(.leading, 4)

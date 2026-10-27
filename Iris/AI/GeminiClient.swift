@@ -31,19 +31,19 @@ struct GeminiClient {
         var errorDescription: String? {
             switch self {
             case .noKey:
-                return "Todavía no tengo mi cerebro conectado. Agrega tu clave de Gemini en Ajustes › Cerebro de Iris."
+                return "Todavía no tengo mi cerebro conectado. Agrega tu clave de IA en Ajustes › Cerebro de Iris."
             case .badKey(let message):
-                return "Google no aceptó la clave de Gemini (\(message)). Revísala en Ajustes › Cerebro de Iris."
+                return "No se aceptó la clave de IA (\(message)). Revísala en Ajustes › Cerebro de Iris."
             case .quota:
-                return "Por hoy se acabó el cupo gratis de Gemini. Vuelve a intentarlo en un rato o mañana."
+                return "Por ahora se acabó el cupo gratis de la IA. Vuelve a intentarlo en un rato o mañana."
             case .network:
                 return "No pude conectarme. Revisa tu internet e inténtalo de nuevo."
             case .server(let message):
-                return "Gemini respondió con un error: \(message)"
+                return "La IA respondió con un error: \(message)"
             case .unreadable:
-                return "No entendí la respuesta de Gemini. ¿Me lo repites?"
+                return "No entendí la respuesta de la IA. ¿Me lo repites?"
             case .modelUnavailable(let message):
-                return "El modelo de Gemini no está disponible: \(message)"
+                return "El modelo de IA no está disponible: \(message)"
             }
         }
     }
@@ -60,6 +60,11 @@ struct GeminiClient {
     static func generate(system: String, turns: [Turn]) async throws -> String {
         let key = apiKey
         guard !key.isEmpty else { throw Failure.noKey }
+
+        // Claves de Groq ("gsk_…") van a Groq; las demás, a Gemini.
+        if GroqClient.isGroqKey(key) {
+            return try await GroqClient.generate(key: key, system: system, turns: turns)
+        }
 
         var lastError: Error = Failure.unreadable
         for model in modelsToTry {
