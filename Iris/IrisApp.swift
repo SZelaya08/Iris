@@ -13,6 +13,8 @@ struct IrisApp: App {
                 .environmentObject(tasks)
                 .environmentObject(reminders)
                 .tint(IrisColor.navy)
+                // Iris tiene su propio estilo claro (azul y cristal), aunque el iPhone esté en modo oscuro.
+                .preferredColorScheme(.light)
         }
     }
 }

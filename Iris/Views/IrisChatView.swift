@@ -106,7 +106,12 @@ struct IrisChatView: View {
             checkMorningSummary()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { checkMorningSummary() }
+            if phase == .active {
+                // Trae lo que hayas hablado con Iris desde Siri.
+                let saved = ChatHistory.load()
+                if !thinking, saved.count > messages.count { messages = saved }
+                checkMorningSummary()
+            }
         }
         .onChange(of: inputFocused) { _, focused in
             isTyping = focused
@@ -294,7 +299,8 @@ struct ChatBubble: View {
         if message.fromIris {
             shape
                 .fill(.ultraThinMaterial)
-                .overlay(shape.fill(Color.white.opacity(0.35)))
+                .overlay(shape.fill(Color.white.opacity(0.5)))
+                .environment(\.colorScheme, .light)
         } else {
             shape.fill(IrisColor.navy)
         }

@@ -1,0 +1,41 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Tell ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dile a ${applicationName}" } }
+      }
+    },
+    "Talk to ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Habla con ${applicationName}" } }
+      }
+    },
+    "Ask ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pregúntale a ${applicationName}" } }
+      }
+    },
+    "Add a task in ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Agrega una tarea en ${applicationName}" } }
+      }
+    },
+    "New task in ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nueva tarea en ${applicationName}" } }
+      }
+    },
+    "What's pending in ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Qué tengo pendiente en ${applicationName}" } }
+      }
+    },
+    "My tasks in ${applicationName}" : {
+      "localizations" : {
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mis tareas en ${applicationName}" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

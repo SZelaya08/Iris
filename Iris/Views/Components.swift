@@ -38,7 +38,8 @@ struct GlassBackground: ViewModifier {
             .background {
                 shape
                     .fill(.ultraThinMaterial)
-                    .overlay(shape.fill(Color.white.opacity(0.35)))
+                    .overlay(shape.fill(Color.white.opacity(0.5)))
+                    .environment(\.colorScheme, .light)
             }
             .overlay(shape.strokeBorder(Color.white.opacity(0.8), lineWidth: 1))
             .shadow(color: IrisColor.ink.opacity(0.07), radius: 12, x: 0, y: 6)
