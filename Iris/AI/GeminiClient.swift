@@ -21,7 +21,7 @@ struct GeminiClient {
 
     enum Failure: LocalizedError {
         case noKey
-        case badKey
+        case badKey(String)
         case quota
         case network
         case server(String)
@@ -32,8 +32,8 @@ struct GeminiClient {
             switch self {
             case .noKey:
                 return "Todavía no tengo mi cerebro conectado. Agrega tu clave de Gemini en Ajustes › Cerebro de Iris."
-            case .badKey:
-                return "Google no aceptó la clave de Gemini. Revísala en Ajustes › Cerebro de Iris."
+            case .badKey(let message):
+                return "Google no aceptó la clave de Gemini (\(message)). Revísala en Ajustes › Cerebro de Iris."
             case .quota:
                 return "Por hoy se acabó el cupo gratis de Gemini. Vuelve a intentarlo en un rato o mañana."
             case .network:
@@ -75,19 +75,92 @@ struct GeminiClient {
         throw lastError
     }
 
+    /// Primero usa la "Interactions API" (la nueva, que acepta las claves "AQ.").
+    /// Si no está disponible, prueba la forma anterior ("generateContent").
     private static func call(model: String, key: String, system: String, turns: [Turn]) async throws -> String {
+        do {
+            return try await callInteractions(model: model, key: key, system: system, turns: turns)
+        } catch Failure.modelUnavailable {
+            return try await callGenerateContent(model: model, key: key, system: system, turns: turns)
+        }
+    }
+
+    // MARK: - Interactions API (nueva)
+
+    private static func callInteractions(model: String, key: String, system: String, turns: [Turn]) async throws -> String {
+        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions") else {
+            throw Failure.unreadable
+        }
+        let body: [String: Any] = [
+            "model": model,
+            "system_instruction": system,
+            "input": transcript(turns),
+            "store": false
+        ]
+        let json = try await post(url: url, key: key, body: body)
+
+        // La respuesta trae "steps"; el texto está en los pasos "model_output".
+        var texts: [String] = []
+        for step in json["steps"] as? [[String: Any]] ?? [] where (step["type"] as? String) == "model_output" {
+            for item in step["content"] as? [[String: Any]] ?? [] where (item["type"] as? String) == "text" {
+                if let text = item["text"] as? String { texts.append(text) }
+            }
+        }
+        // Formato alterno ("outputs"), por si Google lo cambia.
+        if texts.isEmpty {
+            for item in json["outputs"] as? [[String: Any]] ?? [] where (item["type"] as? String) == "text" {
+                if let text = item["text"] as? String { texts.append(text) }
+            }
+        }
+        let text = texts.joined()
+        guard !text.isEmpty else { throw Failure.unreadable }
+        return text
+    }
+
+    /// La conversación como texto: la Interactions API recibe una sola entrada.
+    private static func transcript(_ turns: [Turn]) -> String {
+        let trimmed = Array(turns.drop(while: { $0.role == .model }))
+        guard trimmed.count > 1 else { return trimmed.last?.text ?? "" }
+        let previous = trimmed.dropLast().map { ($0.role == .user ? "Ella" : "Iris") + ": " + $0.text }
+        return """
+        Conversación hasta ahora:
+        \(previous.joined(separator: "\n"))
+
+        Su nuevo mensaje:
+        \(trimmed.last?.text ?? "")
+        """
+    }
+
+    // MARK: - generateContent (anterior)
+
+    private static func callGenerateContent(model: String, key: String, system: String, turns: [Turn]) async throws -> String {
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent") else {
             throw Failure.modelUnavailable("modelo inválido")
         }
-
         let body: [String: Any] = [
             "systemInstruction": ["parts": [["text": system]]],
             "contents": mergedContents(turns),
-            "generationConfig": [
-                "responseMimeType": "application/json"
-            ]
+            "generationConfig": ["responseMimeType": "application/json"]
         ]
+        let json = try await post(url: url, key: key, body: body)
 
+        guard let candidates = json["candidates"] as? [[String: Any]],
+              let content = candidates.first?["content"] as? [String: Any],
+              let parts = content["parts"] as? [[String: Any]]
+        else { throw Failure.unreadable }
+
+        // Se ignoran las partes de "pensamiento" del modelo, si las hay.
+        let text = parts
+            .filter { ($0["thought"] as? Bool) != true }
+            .compactMap { $0["text"] as? String }
+            .joined()
+        guard !text.isEmpty else { throw Failure.unreadable }
+        return text
+    }
+
+    // MARK: - Envío y errores
+
+    private static func post(url: URL, key: String, body: [String: Any]) async throws -> [String: Any] {
         var request = URLRequest(url: url, timeoutInterval: 40)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -109,9 +182,11 @@ struct GeminiClient {
             let message = ((json?["error"] as? [String: Any])?["message"] as? String) ?? "código \(status)"
             let lower = message.lowercased()
             switch status {
+            case _ where lower.contains("prepayment") || lower.contains("billing"):
+                throw Failure.server("tu cuenta de Google tiene facturación sin saldo. Crea la clave con una cuenta que no tenga facturación.")
             case 400 where lower.contains("api key"),
                  401, 403:
-                throw Failure.badKey
+                throw Failure.badKey(message)
             case 429:
                 throw Failure.quota
             case 404:
@@ -122,19 +197,7 @@ struct GeminiClient {
                 throw Failure.server(message)
             }
         }
-
-        guard let candidates = json?["candidates"] as? [[String: Any]],
-              let content = candidates.first?["content"] as? [String: Any],
-              let parts = content["parts"] as? [[String: Any]]
-        else { throw Failure.unreadable }
-
-        // Se ignoran las partes de "pensamiento" del modelo, si las hay.
-        let text = parts
-            .filter { ($0["thought"] as? Bool) != true }
-            .compactMap { $0["text"] as? String }
-            .joined()
-        guard !text.isEmpty else { throw Failure.unreadable }
-        return text
+        return json ?? [:]
     }
 
     /// Gemini pide que la conversación empiece con el usuario
