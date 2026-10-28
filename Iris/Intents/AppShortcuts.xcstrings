@@ -1,12 +1,32 @@
 {
   "sourceLanguage": "es",
   "strings": {
-    "Anota en ${applicationName}": {
+    "Hola ${applicationName}": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Note in ${applicationName}"
+            "value": "Hi ${applicationName}"
+          }
+        }
+      }
+    },
+    "Oye ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hey ${applicationName}"
+          }
+        }
+      }
+    },
+    "Mi asistente ${applicationName}": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My ${applicationName} assistant"
           }
         }
       }
@@ -21,72 +41,22 @@
         }
       }
     },
-    "Abre el asistente de ${applicationName}": {
+    "Conversar con ${applicationName}": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the ${applicationName} assistant"
+            "value": "Chat with ${applicationName}"
           }
         }
       }
     },
-    "Nueva tarea en ${applicationName}": {
+    "${applicationName} escucha": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New task in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Agrega una tarea en ${applicationName}": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a task in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Agregar tarea en ${applicationName}": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add task in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Pendientes de ${applicationName}": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What's pending in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Qué tengo pendiente en ${applicationName}": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What do I have pending in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Mis tareas en ${applicationName}": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My tasks in ${applicationName}"
+            "value": "${applicationName} listen"
           }
         }
       }

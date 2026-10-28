@@ -31,11 +31,6 @@ struct AjustesView: View {
                     conexiones
                     widgetSection
 
-                    Text("Iris \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
-                        .font(.system(size: 12))
-                        .foregroundStyle(IrisColor.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 8)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -45,8 +40,24 @@ struct AjustesView: View {
         }
         .navigationTitle("Ajustes")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            // La versión instalada, para saber si ya llegó el último arreglo.
+            ToolbarItem(placement: .topBarTrailing) {
+                Text("v\(versionInstalada)")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(IrisColor.navy)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(IrisColor.navy.opacity(0.1)))
+                    .accessibilityLabel("Versión \(versionInstalada)")
+            }
+        }
         .onChange(of: resumenActivo) { _, _ in SummaryNotification.schedule() }
         .onChange(of: resumenHora) { _, _ in SummaryNotification.schedule() }
+    }
+
+    private var versionInstalada: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
     }
 
     // MARK: - Secciones

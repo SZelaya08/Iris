@@ -38,102 +38,26 @@ struct HablarConIrisIntent: AppIntent {
     }
 }
 
-// MARK: - "Oye Siri, agrega una tarea en Iris"
-
-/// Agrega una tarea directamente, sin pasar por la IA (es lo más rápido).
-struct AgregarTareaIntent: AppIntent {
-    static var title: LocalizedStringResource = "Agregar tarea en Iris"
-    static var description = IntentDescription("Agrega una tarea a tu lista de Iris.")
-    static var openAppWhenRun = false
-
-    @Parameter(title: "Tarea", requestValueDialog: IntentDialog("¿Qué tarea agrego?"))
-    var tarea: String
-
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard TaskRepository.hasAccess else {
-            return .result(dialog: "Primero abre Iris y dale permiso para usar Recordatorios.")
-        }
-        let store = TaskStore()
-        let title = tarea.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else {
-            return .result(dialog: "No escuché la tarea. Inténtalo de nuevo.")
-        }
-        store.add(title: title, dueDate: nil)
-        await store.reload()
-        return .result(dialog: "Listo, agregué «\(title)» a tus tareas.")
-    }
-}
-
-// MARK: - "Oye Siri, ¿qué tengo pendiente en Iris?"
-
-/// Siri te lee tus tareas pendientes.
-struct PendientesIntent: AppIntent {
-    static var title: LocalizedStringResource = "Tareas pendientes de Iris"
-    static var description = IntentDescription("Escucha tus tareas pendientes.")
-    static var openAppWhenRun = false
-
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard TaskRepository.hasAccess else {
-            return .result(dialog: "Primero abre Iris y dale permiso para usar Recordatorios.")
-        }
-        let store = TaskStore()
-        await store.reload()
-        let pending = store.tasks.filter { !$0.isDone }.sorted(by: TaskItem.sortOrder)
-
-        guard !pending.isEmpty else {
-            return .result(dialog: "No tienes tareas pendientes. ¡Todo listo!")
-        }
-
-        let names = pending.prefix(5).map(\.title)
-        let list: String
-        if names.count == 1 {
-            list = names[0]
-        } else {
-            list = names.dropLast().joined(separator: ", ") + " y " + (names.last ?? "")
-        }
-        let intro = pending.count == 1 ? "Tienes una tarea pendiente" : "Tienes \(pending.count) tareas pendientes"
-        let extra = pending.count > 5 ? ". Te leí las 5 más urgentes." : "."
-        return .result(dialog: "\(intro): \(list)\(extra)")
-    }
-}
-
 // MARK: - Frases de Siri
-// Las frases en español están aquí (idioma principal); las de inglés, en AppShortcuts.xcstrings.
-// Se evitan "dile a…", "habla con…" y "pregúntale a…" porque Siri las usa para mensajes y llamadas.
+// Un solo atajo: Siri te pregunta qué decirle a Iris y ella hace el resto
+// (crear tareas o recordatorios, marcarlos como hechos, decirte tus pendientes…).
+// Las frases en español están aquí; las de inglés, en AppShortcuts.xcstrings.
+// Se evitan "dile a…", "anota…", "nueva tarea…" porque Siri las manda a Mensajes, Notas o Recordatorios.
 
 struct IrisShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: HablarConIrisIntent(),
             phrases: [
-                "Anota en \(.applicationName)",
+                "Hola \(.applicationName)",
+                "Oye \(.applicationName)",
+                "Mi asistente \(.applicationName)",
                 "Asistente \(.applicationName)",
-                "Abre el asistente de \(.applicationName)"
+                "Conversar con \(.applicationName)",
+                "\(.applicationName) escucha"
             ],
             shortTitle: "Hablar con Iris",
             systemImageName: "bubble.left.and.text.bubble.right"
-        )
-        AppShortcut(
-            intent: AgregarTareaIntent(),
-            phrases: [
-                "Nueva tarea en \(.applicationName)",
-                "Agrega una tarea en \(.applicationName)",
-                "Agregar tarea en \(.applicationName)"
-            ],
-            shortTitle: "Nueva tarea",
-            systemImageName: "checkmark.square"
-        )
-        AppShortcut(
-            intent: PendientesIntent(),
-            phrases: [
-                "Pendientes de \(.applicationName)",
-                "Qué tengo pendiente en \(.applicationName)",
-                "Mis tareas en \(.applicationName)"
-            ],
-            shortTitle: "Pendientes",
-            systemImageName: "list.bullet"
         )
     }
 }
